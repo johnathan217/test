@@ -14,6 +14,7 @@
         torch=">=2.1"
         wandb=">=0.15.12"
         zstandard="^0.22.0"    # Required for downloading datasets such as The Pile
+    transformer-lens = "^1.9.1"
 
     [tool.poetry.group]
         [tool.poetry.group.dev.dependencies]
