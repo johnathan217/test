@@ -8,45 +8,55 @@
     version="0.0.0"
 
     [tool.poetry.dependencies]
+        datasets=">=2.15.0"
         einops=">=0.6"
         python=">=3.10, <3.12"
-        strenum="^0.4.15"
-        torch=">=2.1"
+        strenum=">=0.4.15"
+        tokenizers=">=0.15.0"
+        torch=">=2.1.1"
+        transformers=">=4.35.2"
         wandb=">=0.15.12"
         zstandard="^0.22.0"    # Required for downloading datasets such as The Pile
     transformer-lens = "^1.9.1"
+        zstandard=">=0.22.0"    # Required for downloading datasets such as The Pile
 
     [tool.poetry.group]
         [tool.poetry.group.dev.dependencies]
             jupyter=">=1"
             plotly=">=5"
             poethepoet=">=0.24.2"
-            pyright=">=1.1.334"
+            pydoclint="^0.3.8"
+            pyright=">=1.1.338"
             pytest=">=7"
             pytest-cov=">=4"
-            pytest-timeout="^2.2.0"
+            pytest-timeout=">=2.2.0"
             ruff=">=0.1.4"
-            syrupy="^4.6.0"
+            syrupy=">=4.6.0"
 
         [tool.poetry.group.demos.dependencies]
+            ipywidgets="^8.1.1"
             jupyterlab=">=3"
-            pandas=">=2.1.2"
-            tokenizers=">=0.13.0, <0.14.0"   # See https://github.com/neelnanda-io/TransformerLens/issues/404
             transformer-lens=">=1.9.0"
-            transformers=">=4.33.1, <4.34.0" # See https://github.com/neelnanda-io/TransformerLens/issues/404
 
         [tool.poetry.group.docs.dependencies]
-            mkdocs="^1.5.3"
-            mkdocs-gen-files="^0.5.0"
-            mkdocs-literate-nav="^0.6.1"
-            mkdocstrings="^0.23.0"
-            mkdocstrings-python="^1.7.3"
+            mkdocs=">=1.5.3"
+            mkdocs-gen-files=">=0.5.0"
+            mkdocs-htmlproofer-plugin="^1.0.0"
+            mkdocs-literate-nav=">=0.6.1"
+            mkdocs-material=">=9.4.10"
+            mkdocs-section-index=">=0.3.8"
+            mkdocstrings={extras=["python"], version=">=0.24.0"}
+            mkdocstrings-python=">=1.7.3"
+            mknotebooks="^0.8.0"
+            pygments="^2.17.2"
+            pymdown-extensions="^10.5"
+            pytkdocs-tweaks=">=0.0.7"
 
 [tool.poe.tasks]
     [tool.poe.tasks.check]
         help="All checks"
         ignore_fail=false
-        sequence=["check-lock", "format", "lint", "test", "typecheck"]
+        sequence=["check-lock", "docstring-lint", "format", "lint", "test", "typecheck"]
 
     [tool.poe.tasks.format]
         cmd="ruff format ."
@@ -55,6 +65,10 @@
     [tool.poe.tasks.lint]
         cmd="ruff check . --fix"
         help="Lint (with autofix)"
+
+    [tool.poe.tasks.docstring-lint]
+        cmd="pydoclint ."
+        help="Lint docstrings"
 
     [tool.poe.tasks.ruff]
         help="  [alias for lint && format]"
@@ -90,18 +104,16 @@
         help="Cleans out the automatically generated docs."
 
     [tool.poe.tasks.gen-docs]
-        help="Cleans out the automatically generated docs."
+        help="Generate the reference (API) docs."
         script="docs.gen_ref_pages:run"
 
     [tool.poe.tasks.make-docs]
         cmd="mkdocs build"
-        deps=["clean-docs", "gen-docs"]
-        help="Generates our docs"
+        help="Build the static docs site"
 
     [tool.poe.tasks.docs-hot-reload]
         cmd="mkdocs serve"
-        deps=["clean-docs"]
-        help="Starts our watch server"
+        help="Hot reload the docs site (so changes appear instantly)"
 
 [build-system]
     build-backend="poetry.core.masonry.api"
@@ -116,6 +128,7 @@
         addopts=[
             "--doctest-modules",
             "--jaxtyping-packages=sparse_autoencoder,beartype.beartype",
+            "-W ignore::beartype.roar.BeartypeDecorHintPep585DeprecationWarning",
             "-s",
         ]
 
@@ -138,11 +151,15 @@
     select=["ALL"]
 
     [tool.ruff.lint]
+        [tool.ruff.lint.flake8-tidy-imports]
+            ban-relative-imports="all"
+
         [tool.ruff.lint.flake8-annotations]
             mypy-init-return=true
 
         [tool.ruff.lint.isort]
             force-sort-within-sections=true
+            known-third-party=["wandb"]
             lines-after-imports=2
 
         [tool.ruff.lint.per-file-ignores]
@@ -150,6 +167,7 @@
                 "B018", # Useless variables are used for printing
                 "D100", # No file docstring needed
                 "E402", # Imports don't need to be at the top
+                "I001", # Unsorted imports
                 "T201", # Print is fine
             ]
             "**/tests/*"=[
@@ -225,3 +243,11 @@
     strictListInference=true
     strictParameterNoneValue=true
     strictSetInference=true
+
+[tool.pydoclint]
+    allow-init-docstring=true
+    arg-type-hints-in-docstring=false
+    check-return-types=false
+    check-yield-types=false
+    exclude='\.venv'
+    style="google"

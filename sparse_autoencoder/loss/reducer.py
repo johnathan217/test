@@ -7,11 +7,7 @@ import torch
 from torch import Tensor
 
 from sparse_autoencoder.loss.abstract_loss import AbstractLoss
-from sparse_autoencoder.tensor_types import (
-    InputOutputActivationBatch,
-    ItemTensor,
-    LearnedActivationBatch,
-)
+from sparse_autoencoder.tensor_types import Axis
 
 
 @final
@@ -22,14 +18,14 @@ class LossReducer(AbstractLoss):
     nn.Sequential.
 
     Example:
-        >>> from sparse_autoencoder.loss.mse_reconstruction_loss import MSEReconstructionLoss
+        >>> from sparse_autoencoder.loss.decoded_activations_l2 import L2ReconstructionLoss
         >>> from sparse_autoencoder.loss.learned_activations_l1 import LearnedActivationsL1Loss
         >>> LossReducer(
-        ...     MSEReconstructionLoss(),
+        ...     L2ReconstructionLoss(),
         ...     LearnedActivationsL1Loss(0.001),
         ... )
         LossReducer(
-          (0): MSEReconstructionLoss()
+          (0): L2ReconstructionLoss()
           (1): LearnedActivationsL1Loss(l1_coefficient=0.001)
         )
 
@@ -38,6 +34,14 @@ class LossReducer(AbstractLoss):
     _modules: dict[str, "AbstractLoss"]
     """Children loss modules."""
 
+    def log_name(self) -> str:
+        """Log name.
+
+        Returns:
+            Name of the loss module for logging.
+        """
+        return "total_loss"
+
     def __init__(
         self,
         *loss_modules: AbstractLoss,
@@ -45,7 +49,7 @@ class LossReducer(AbstractLoss):
         """Initialize the loss reducer.
 
         Args:
-            loss_modules: Loss modules to reduce.
+            *loss_modules: Loss modules to reduce.
 
         Raises:
             ValueError: If the loss reducer has no loss modules.
@@ -61,10 +65,10 @@ class LossReducer(AbstractLoss):
 
     def forward(
         self,
-        source_activations: InputOutputActivationBatch,
-        learned_activations: LearnedActivationBatch,
-        decoded_activations: InputOutputActivationBatch,
-    ) -> ItemTensor:
+        source_activations: Float[Tensor, Axis.names(Axis.BATCH, Axis.INPUT_OUTPUT_FEATURE)],
+        learned_activations: Float[Tensor, Axis.names(Axis.BATCH, Axis.LEARNT_FEATURE)],
+        decoded_activations: Float[Tensor, Axis.names(Axis.BATCH, Axis.INPUT_OUTPUT_FEATURE)],
+    ) -> Float[Tensor, Axis.BATCH]:
         """Reduce loss.
 
         Args:

@@ -3,21 +3,21 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any
 
-from sparse_autoencoder.tensor_types import (
-    InputOutputActivationBatch,
-    LearnedActivationBatch,
-)
+from jaxtyping import Float
+from torch import Tensor
+
+from sparse_autoencoder.tensor_types import Axis
 
 
 @dataclass
 class TrainMetricData:
     """Train metric data."""
 
-    input_activations: InputOutputActivationBatch
+    input_activations: Float[Tensor, Axis.names(Axis.BATCH, Axis.INPUT_OUTPUT_FEATURE)]
 
-    learned_activations: LearnedActivationBatch
+    learned_activations: Float[Tensor, Axis.names(Axis.BATCH, Axis.LEARNT_FEATURE)]
 
-    decoded_activations: InputOutputActivationBatch
+    decoded_activations: Float[Tensor, Axis.names(Axis.BATCH, Axis.INPUT_OUTPUT_FEATURE)]
 
 
 class AbstractTrainMetric(ABC):
@@ -25,5 +25,11 @@ class AbstractTrainMetric(ABC):
 
     @abstractmethod
     def calculate(self, data: TrainMetricData) -> dict[str, Any]:
-        """Calculate any metrics."""
-        raise NotImplementedError
+        """Calculate any metrics.
+
+        Args:
+            data: Train metric data.
+
+        Returns:
+            Dictionary of metrics.
+        """

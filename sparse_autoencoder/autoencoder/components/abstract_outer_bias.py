@@ -4,12 +4,11 @@ This can be extended to create e.g. a pre-encoder and post-decoder bias.
 """
 from abc import ABC, abstractmethod
 
+from jaxtyping import Float
+from torch import Tensor
 from torch.nn import Module
 
-from sparse_autoencoder.tensor_types import (
-    InputOutputActivationBatch,
-    InputOutputActivationVector,
-)
+from sparse_autoencoder.tensor_types import Axis
 
 
 class AbstractOuterBias(Module, ABC):
@@ -17,18 +16,17 @@ class AbstractOuterBias(Module, ABC):
 
     @property
     @abstractmethod
-    def bias(self) -> InputOutputActivationVector:
+    def bias(self) -> Float[Tensor, Axis.INPUT_OUTPUT_FEATURE]:
         """Bias.
 
         May be a reference to a bias parameter in the parent module, if using e.g. a tied bias.
         """
-        raise NotImplementedError
 
     @abstractmethod
     def forward(
         self,
-        x: InputOutputActivationBatch,
-    ) -> InputOutputActivationBatch:
+        x: Float[Tensor, Axis.names(Axis.BATCH, Axis.INPUT_OUTPUT_FEATURE)],
+    ) -> Float[Tensor, Axis.names(Axis.BATCH, Axis.INPUT_OUTPUT_FEATURE)]:
         """Forward Pass.
 
         Args:
@@ -37,4 +35,3 @@ class AbstractOuterBias(Module, ABC):
         Returns:
             Resulting activations.
         """
-        raise NotImplementedError

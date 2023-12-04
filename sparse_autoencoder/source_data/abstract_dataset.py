@@ -3,10 +3,12 @@ from abc import ABC, abstractmethod
 from typing import Any, Generic, TypedDict, TypeVar, final
 
 from datasets import IterableDataset, load_dataset
+from jaxtyping import Int
+from torch import Tensor
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset as TorchDataset
 
-from sparse_autoencoder.tensor_types import BatchTokenizedPrompts
+from sparse_autoencoder.tensor_types import Axis
 
 
 TokenizedPrompt = list[int]
@@ -22,7 +24,7 @@ class TokenizedPrompts(TypedDict):
 class TorchTokenizedPrompts(TypedDict):
     """Tokenized prompts prepared for PyTorch."""
 
-    input_ids: BatchTokenizedPrompts
+    input_ids: Int[Tensor, Axis.names(Axis.SOURCE_DATA_BATCH, Axis.POSITION)]
 
 
 HuggingFaceDatasetItem = TypeVar("HuggingFaceDatasetItem", bound=Any)
@@ -94,8 +96,10 @@ class SourceDataset(ABC, Generic[HuggingFaceDatasetItem]):
             context_size: The context size to use when returning a list of tokenized prompts.
                 *Towards Monosemanticity: Decomposing Language Models With Dictionary Learning* used
                 a context size of 250.
+
+        Returns:
+            Tokenized prompts.
         """
-        raise NotImplementedError
 
     @abstractmethod
     def __init__(

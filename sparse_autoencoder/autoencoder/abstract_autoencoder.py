@@ -1,15 +1,14 @@
 """Abstract Sparse Autoencoder Model."""
 from abc import ABC, abstractmethod
 
+from jaxtyping import Float
+from torch import Tensor
 from torch.nn import Module
 
 from sparse_autoencoder.autoencoder.components.abstract_decoder import AbstractDecoder
 from sparse_autoencoder.autoencoder.components.abstract_encoder import AbstractEncoder
 from sparse_autoencoder.autoencoder.components.abstract_outer_bias import AbstractOuterBias
-from sparse_autoencoder.tensor_types import (
-    InputOutputActivationBatch,
-    LearnedActivationBatch,
-)
+from sparse_autoencoder.tensor_types import Axis
 
 
 class AbstractAutoencoder(Module, ABC):
@@ -19,33 +18,29 @@ class AbstractAutoencoder(Module, ABC):
     @abstractmethod
     def encoder(self) -> AbstractEncoder:
         """Encoder."""
-        raise NotImplementedError
 
     @property
     @abstractmethod
     def decoder(self) -> AbstractDecoder:
         """Decoder."""
-        raise NotImplementedError
 
     @property
     @abstractmethod
     def pre_encoder_bias(self) -> AbstractOuterBias:
         """Pre-encoder bias."""
-        raise NotImplementedError
 
     @property
     @abstractmethod
     def post_decoder_bias(self) -> AbstractOuterBias:
         """Post-decoder bias."""
-        raise NotImplementedError
 
     @abstractmethod
     def forward(
         self,
-        x: InputOutputActivationBatch,
+        x: Float[Tensor, Axis.names(Axis.BATCH, Axis.INPUT_OUTPUT_FEATURE)],
     ) -> tuple[
-        LearnedActivationBatch,
-        InputOutputActivationBatch,
+        Float[Tensor, Axis.names(Axis.BATCH, Axis.LEARNT_FEATURE)],
+        Float[Tensor, Axis.names(Axis.BATCH, Axis.INPUT_OUTPUT_FEATURE)],
     ]:
         """Forward Pass.
 
@@ -55,9 +50,7 @@ class AbstractAutoencoder(Module, ABC):
         Returns:
             Tuple of learned activations and decoded activations.
         """
-        raise NotImplementedError
 
     @abstractmethod
     def reset_parameters(self) -> None:
         """Reset the parameters."""
-        raise NotImplementedError

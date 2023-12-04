@@ -3,13 +3,15 @@ from abc import ABC, abstractmethod
 from concurrent.futures import Future
 from typing import final
 
+from jaxtyping import Float
 import torch
+from torch import Tensor
 from torch.utils.data import Dataset
 
-from sparse_autoencoder.tensor_types import InputOutputActivationBatch, InputOutputActivationVector
+from sparse_autoencoder.tensor_types import Axis
 
 
-class ActivationStore(Dataset[InputOutputActivationVector], ABC):
+class ActivationStore(Dataset[Float[Tensor, Axis.INPUT_OUTPUT_FEATURE]], ABC):
     """Activation Store Abstract Class.
 
     Extends the `torch.utils.data.Dataset` class to provide an activation store, with additional
@@ -49,29 +51,26 @@ class ActivationStore(Dataset[InputOutputActivationVector], ABC):
     """
 
     @abstractmethod
-    def append(self, item: InputOutputActivationVector) -> Future | None:
+    def append(self, item: Float[Tensor, Axis.INPUT_OUTPUT_FEATURE]) -> Future | None:
         """Add a Single Item to the Store."""
-        raise NotImplementedError
 
     @abstractmethod
-    def extend(self, batch: InputOutputActivationBatch) -> Future | None:
+    def extend(
+        self, batch: Float[Tensor, Axis.names(Axis.BATCH, Axis.INPUT_OUTPUT_FEATURE)]
+    ) -> Future | None:
         """Add a Batch to the Store."""
-        raise NotImplementedError
 
     @abstractmethod
     def empty(self) -> None:
         """Empty the Store."""
-        raise NotImplementedError
 
     @abstractmethod
     def __len__(self) -> int:
         """Get the Length of the Store."""
-        raise NotImplementedError
 
     @abstractmethod
-    def __getitem__(self, index: int) -> InputOutputActivationVector:
+    def __getitem__(self, index: int) -> Float[Tensor, Axis.INPUT_OUTPUT_FEATURE]:
         """Get an Item from the Store."""
-        raise NotImplementedError
 
     def shuffle(self) -> None:
         """Optional shuffle method."""

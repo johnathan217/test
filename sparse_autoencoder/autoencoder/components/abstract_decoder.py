@@ -2,16 +2,12 @@
 from abc import ABC, abstractmethod
 from typing import final
 
+from jaxtyping import Float, Int
 import torch
+from torch import Tensor
 from torch.nn import Module
 
-from sparse_autoencoder.tensor_types import (
-    DeadDecoderNeuronWeightUpdates,
-    DecoderWeights,
-    InputOutputActivationBatch,
-    InputOutputNeuronIndices,
-    LearnedActivationBatch,
-)
+from sparse_autoencoder.tensor_types import Axis
 
 
 class AbstractDecoder(Module, ABC):
@@ -22,15 +18,18 @@ class AbstractDecoder(Module, ABC):
 
     @property
     @abstractmethod
-    def weight(self) -> DecoderWeights:
-        """Weight."""
-        raise NotImplementedError
+    def weight(self) -> Float[Tensor, Axis.names(Axis.INPUT_OUTPUT_FEATURE, Axis.LEARNT_FEATURE)]:
+        """Weight.
+
+        Each column in the weights matrix acts as a dictionary vector, representing a single basis
+        element in the learned activation space.
+        """
 
     @abstractmethod
     def forward(
         self,
-        x: LearnedActivationBatch,
-    ) -> InputOutputActivationBatch:
+        x: Float[Tensor, Axis.names(Axis.BATCH, Axis.LEARNT_FEATURE)],
+    ) -> Float[Tensor, Axis.names(Axis.BATCH, Axis.INPUT_OUTPUT_FEATURE)]:
         """Forward Pass.
 
         Args:
@@ -39,18 +38,16 @@ class AbstractDecoder(Module, ABC):
         Returns:
             Decoded activations.
         """
-        raise NotImplementedError
 
     @abstractmethod
     def reset_parameters(self) -> None:
         """Reset the parameters."""
-        raise NotImplementedError
 
     @final
     def update_dictionary_vectors(
         self,
-        dictionary_vector_indices: InputOutputNeuronIndices,
-        updated_weights: DeadDecoderNeuronWeightUpdates,
+        dictionary_vector_indices: Int[Tensor, Axis.LEARNT_FEATURE_IDX],
+        updated_weights: Float[Tensor, Axis.names(Axis.INPUT_OUTPUT_FEATURE, Axis.DEAD_FEATURE)],
     ) -> None:
         """Update decoder dictionary vectors.
 
@@ -65,4 +62,8 @@ class AbstractDecoder(Module, ABC):
             return
 
         with torch.no_grad():
-            self.weight[dictionary_vector_indices, :] = updated_weights
+            self.weight[:, dictionary_vector_indices] = updated_weights
+
+    @abstractmethod
+    def constrain_weights_unit_norm(self) -> None:
+        """Constrain the weights to have unit norm."""

@@ -1,5 +1,7 @@
 """Tensor Activation Store."""
+from jaxtyping import Float
 import torch
+from torch import Tensor
 
 from sparse_autoencoder.activation_store.base_store import (
     ActivationStore,
@@ -8,12 +10,7 @@ from sparse_autoencoder.activation_store.base_store import (
 from sparse_autoencoder.activation_store.utils.extend_resize import (
     resize_to_single_item_dimension,
 )
-from sparse_autoencoder.tensor_types import (
-    InputOutputActivationBatch,
-    InputOutputActivationVector,
-    SourceModelActivations,
-    StoreActivations,
-)
+from sparse_autoencoder.tensor_types import Axis
 
 
 class TensorActivationStore(ActivationStore):
@@ -57,7 +54,7 @@ class TensorActivationStore(ActivationStore):
         torch.Size([2, 100])
     """
 
-    _data: StoreActivations
+    _data: Float[Tensor, Axis.names(Axis.ITEMS, Axis.INPUT_OUTPUT_FEATURE)]
     """Underlying Tensor Data Store."""
 
     items_stored: int = 0
@@ -88,29 +85,33 @@ class TensorActivationStore(ActivationStore):
         Returns the number of activation vectors in the dataset.
 
         Example:
-        >>> import torch
-        >>> store = TensorActivationStore(max_items=10_000_000, num_neurons=100)
-        >>> store.append(torch.randn(100))
-        >>> store.append(torch.randn(100))
-        >>> len(store)
-        2
+            >>> import torch
+            >>> store = TensorActivationStore(max_items=10_000_000, num_neurons=100)
+            >>> store.append(torch.randn(100))
+            >>> store.append(torch.randn(100))
+            >>> len(store)
+            2
+
+        Returns:
+            The number of activation vectors in the dataset.
         """
         return self.items_stored
 
     def __sizeof__(self) -> int:
         """Sizeof Dunder Method.
 
-        Returns the size of the underlying tensor in bytes.
-
         Example:
-        >>> import torch
-        >>> store = TensorActivationStore(max_items=2, num_neurons=100)
-        >>> store.__sizeof__() # Pre-allocated tensor of 2x100
-        800
+            >>> import torch
+            >>> store = TensorActivationStore(max_items=2, num_neurons=100)
+            >>> store.__sizeof__() # Pre-allocated tensor of 2x100
+            800
+
+        Returns:
+            The size of the underlying tensor in bytes.
         """
         return self._data.element_size() * self._data.nelement()
 
-    def __getitem__(self, index: int) -> InputOutputActivationVector:
+    def __getitem__(self, index: int) -> Float[Tensor, Axis.INPUT_OUTPUT_FEATURE]:
         """Get Item Dunder Method.
 
         Example:
@@ -159,7 +160,7 @@ class TensorActivationStore(ActivationStore):
         # Use this permutation to shuffle the active data in-place
         self._data[: self.items_stored] = self._data[perm]
 
-    def append(self, item: InputOutputActivationVector) -> None:
+    def append(self, item: Float[Tensor, Axis.INPUT_OUTPUT_FEATURE]) -> None:
         """Add a single item to the store.
 
         Example:
@@ -185,7 +186,7 @@ class TensorActivationStore(ActivationStore):
         )
         self.items_stored += 1
 
-    def extend(self, batch: SourceModelActivations) -> None:
+    def extend(self, batch: Float[Tensor, Axis.names(Axis.ANY, Axis.INPUT_OUTPUT_FEATURE)]) -> None:
         """Add a batch to the store.
 
         Examples:
@@ -206,7 +207,9 @@ class TensorActivationStore(ActivationStore):
         Raises:
             IndexError: If there is no space remaining.
         """
-        reshaped: InputOutputActivationBatch = resize_to_single_item_dimension(
+        reshaped: Float[
+            Tensor, Axis.names(Axis.BATCH, Axis.INPUT_OUTPUT_FEATURE)
+        ] = resize_to_single_item_dimension(
             batch,
         )
 

@@ -2,16 +2,13 @@
 from abc import ABC, abstractmethod
 from typing import TypeAlias, final
 
+from jaxtyping import Float
 from strenum import LowercaseStrEnum
 import torch
+from torch import Tensor
 from torch.nn import Module
 
-from sparse_autoencoder.tensor_types import (
-    InputOutputActivationBatch,
-    ItemTensor,
-    LearnedActivationBatch,
-    TrainBatchStatistic,
-)
+from sparse_autoencoder.tensor_types import Axis
 
 
 class LossReductionType(LowercaseStrEnum):
@@ -38,12 +35,20 @@ class AbstractLoss(Module, ABC):
     """Children loss modules."""
 
     @abstractmethod
+    def log_name(self) -> str:
+        """Log name.
+
+        Returns:
+            Name of the loss module for logging.
+        """
+
+    @abstractmethod
     def forward(
         self,
-        source_activations: InputOutputActivationBatch,
-        learned_activations: LearnedActivationBatch,
-        decoded_activations: InputOutputActivationBatch,
-    ) -> TrainBatchStatistic:
+        source_activations: Float[Tensor, Axis.names(Axis.BATCH, Axis.INPUT_OUTPUT_FEATURE)],
+        learned_activations: Float[Tensor, Axis.names(Axis.BATCH, Axis.LEARNT_FEATURE)],
+        decoded_activations: Float[Tensor, Axis.names(Axis.BATCH, Axis.INPUT_OUTPUT_FEATURE)],
+    ) -> Float[Tensor, Axis.BATCH]:
         """Batch itemwise loss.
 
         Args:
@@ -55,16 +60,15 @@ class AbstractLoss(Module, ABC):
         Returns:
             Loss per batch item.
         """
-        raise NotImplementedError
 
     @final
     def batch_scalar_loss(
         self,
-        source_activations: InputOutputActivationBatch,
-        learned_activations: LearnedActivationBatch,
-        decoded_activations: InputOutputActivationBatch,
+        source_activations: Float[Tensor, Axis.names(Axis.BATCH, Axis.INPUT_OUTPUT_FEATURE)],
+        learned_activations: Float[Tensor, Axis.names(Axis.BATCH, Axis.LEARNT_FEATURE)],
+        decoded_activations: Float[Tensor, Axis.names(Axis.BATCH, Axis.INPUT_OUTPUT_FEATURE)],
         reduction: LossReductionType = LossReductionType.MEAN,
-    ) -> ItemTensor:
+    ) -> Float[Tensor, Axis.SINGLE_ITEM]:
         """Batch scalar loss.
 
         Args:
@@ -86,14 +90,13 @@ class AbstractLoss(Module, ABC):
             case LossReductionType.SUM:
                 return itemwise_loss.sum().squeeze()
 
-    @final
     def batch_scalar_loss_with_log(
         self,
-        source_activations: InputOutputActivationBatch,
-        learned_activations: LearnedActivationBatch,
-        decoded_activations: InputOutputActivationBatch,
+        source_activations: Float[Tensor, Axis.names(Axis.BATCH, Axis.INPUT_OUTPUT_FEATURE)],
+        learned_activations: Float[Tensor, Axis.names(Axis.BATCH, Axis.LEARNT_FEATURE)],
+        decoded_activations: Float[Tensor, Axis.names(Axis.BATCH, Axis.INPUT_OUTPUT_FEATURE)],
         reduction: LossReductionType = LossReductionType.MEAN,
-    ) -> tuple[ItemTensor, LossLogType]:
+    ) -> tuple[Float[Tensor, Axis.SINGLE_ITEM], LossLogType]:
         """Batch scalar loss.
 
         Args:
@@ -107,7 +110,7 @@ class AbstractLoss(Module, ABC):
         Returns:
             Tuple of the batch scalar loss and a dict of any properties to log.
         """
-        children_loss_scalars: list[ItemTensor] = []
+        children_loss_scalars: list[Float[Tensor, Axis.SINGLE_ITEM]] = []
         metrics: LossLogType = {}
 
         # If the loss module has children (e.g. it is a reducer):
@@ -132,19 +135,19 @@ class AbstractLoss(Module, ABC):
             )
 
         # Add in the current loss module's metric
-        class_name = self.__class__.__name__
-        metrics[class_name] = current_module_loss.detach().cpu().item()
+        log_name = self.log_name()
+        metrics[log_name] = current_module_loss.detach().cpu().item()
 
         return current_module_loss, metrics
 
     @final
     def __call__(
         self,
-        source_activations: InputOutputActivationBatch,
-        learned_activations: LearnedActivationBatch,
-        decoded_activations: InputOutputActivationBatch,
+        source_activations: Float[Tensor, Axis.names(Axis.BATCH, Axis.INPUT_OUTPUT_FEATURE)],
+        learned_activations: Float[Tensor, Axis.names(Axis.BATCH, Axis.LEARNT_FEATURE)],
+        decoded_activations: Float[Tensor, Axis.names(Axis.BATCH, Axis.INPUT_OUTPUT_FEATURE)],
         reduction: LossReductionType = LossReductionType.MEAN,
-    ) -> tuple[ItemTensor, LossLogType]:
+    ) -> tuple[Float[Tensor, Axis.SINGLE_ITEM], LossLogType]:
         """Batch scalar loss.
 
         Args:

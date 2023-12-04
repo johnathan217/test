@@ -46,6 +46,9 @@ class PreTokenizedDataset(SourceDataset[PreTokenizedDataBatch]):
         Args:
             source_batch: A batch of source data.
             context_size: The context size to use for tokenized prompts.
+
+        Returns:
+            Tokenized prompts.
         """
         tokenized_prompts: list[list[int]] = source_batch["tokens"]
 
@@ -65,7 +68,7 @@ class PreTokenizedDataset(SourceDataset[PreTokenizedDataBatch]):
     def __init__(
         self,
         dataset_path: str,
-        context_size: int = 250,
+        context_size: int = 256,
         buffer_size: int = 1000,
         preprocess_batch_size: int = 1000,
         dataset_split: str = "train",
